@@ -1,0 +1,73 @@
+Red Team Activities - Attack Kill Chain:
+
+1) Vulnerability scan through nmap scan - possible vulnerabilities found open ports and outdated servers and services
+2) Targeting SQL server vulnerabilities - outdated and insecure practices - SQLmap attack from that dump user credentials (User level access)
+3) Using privilege escalation command 'sudo su' we gain root access to the server.
+4) Using the root Access we gain:
+   - Create new users
+   - Create backdoors - revershell.sh
+   - Dump user credentials
+   - Changing content on payroll_app (database manipulation)
+   - Staying in the system long term without detection by clearing syslogs and event logs
+   - Accessing the payroll_app.php source code for possible code injections and stealing credentials on phpmyadmin server.
+   - Through the phpmyadmin root credentials, gain full access to the payroll_app.php from web interface.
+
+--------------------------------------------------------------
+
+Blue Team Cyber Defense Strategy:
+
+Objective: Detect, prevent, and respond to attacks such as network scanning, SSH brute force, and web application exploits using layered defenses, secure logging, and automated playbooks.
+
+1. Threat Context and Adversary Simulation:
+   Attacks anticipated (MITRE ATT&CK framework):
+   - T1595.003: Network Scanning
+   - T1110.004: SSH Credential Spraying (Port 22)
+   - T1190: Web Application Exploitation (payroll.php)
+
+2. Defense Layer – Preventive Security Measures:
+   A. Server Hardening (Mitigation Codes)
+      - M1035 – SSH Checksum Validation
+        Regularly validate integrity of SSH daemon binary using SHA256:
+        sha256sum /usr/sbin/sshd
+        Detects unauthorized tampering (T1036: Masquerading)
+
+      - M1046 – Code-Patched SQLi Defense
+        Harden web applications using parameterized queries to prevent SQL injection exploits like T1190.
+
+      - M1051 – Miniban (Custom)
+        Deploy lightweight in-house tool using iptables and rate-limiting to mitigate SSH brute force attacks.
+
+3. Detection Layer – Secure and Correlated Logging:
+   - Logs from hardened systems forwarded to centralized OSSIM SIEM.
+   - SIEM Detection Rules:
+     SIG_001: Detects >5 SSH login attempts in 5 minutes (T1110)
+     SIG_002: Identifies SQL meta-characters in inputs/logs (T1190)
+     SIG_003: Detects modified SSH binaries via hashes (T1036)
+   - Logs signed and validated for integrity.
+
+4. Response Playbooks – Automated and Manual Actions:
+   A. Automated Responses:
+      - AUTO_M1035: Restore SSH daemon from golden image if tampering detected.
+      - AUTO_M1051: Block offending IP via Miniban API on credential spraying detection.
+   B. Manual Response:
+      - T1562.001 – Audit Attack Path:
+        Analyst traces intrusion path, verifies containment, initiates incident response documentation.
+
+5. Integration Flow:
+   Adversary Action (e.g., SQLi or SSH spray)
+   → Defense Layer tries to prevent
+   → Detection Layer logs and alerts if it fails
+   → Response Playbooks remediate via automation or analyst intervention
+
+Strategic Goals:
+- Minimize Attack Surface: Harden servers, validate binaries
+- Detect Fast: Rule-based SIEM alerts tied to MITRE
+- Respond Instantly: Automated IP blocks and system recovery
+- Enable Visibility: Centralized, tamper-evident logging
+- Auditable Defense: Manual reviews of attack paths and logs
+
+Future Enhancements:
+- Integrate EDR agents for host-level behavior detection
+- Simulate Purple Team exercises to validate detection & response
+- Add anomaly-based detection using ML or UBA for insider threats
+- Visualize attack chains using MITRE ATT&CK Navigator
